@@ -34,6 +34,8 @@ public class Racer extends Participant {
     @JoinColumn(name = "team_id")
     private Team team;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToMany(mappedBy = "pilots")
     private Set<Championship> championships = new HashSet<>();
 

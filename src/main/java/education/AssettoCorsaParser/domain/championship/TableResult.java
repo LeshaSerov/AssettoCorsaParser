@@ -37,6 +37,8 @@ public class TableResult implements Parsing {
 
     private Boolean isTeamResult = false;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "championship_id")
     private Championship championship;

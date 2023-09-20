@@ -26,8 +26,8 @@ public class Championship implements Parsing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // Используйте GenerationType.IDENTITY для автоинкрементного ключа
     private Long id;
+
     private Integer internalId;
     private String name;
     private String status;
@@ -37,13 +37,13 @@ public class Championship implements Parsing {
     private LocalDate endDate;
 
     @OneToMany(mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TableResult> tableResults = new ArrayList<>();
+        private List<TableResult> tableResults = new ArrayList<>();
 
     @Override
     public Championship parseAndPopulate(Element card) {
         try {
             Element elementDate = card.select("td:has(i.fab.fa-solid.fa-calendar-days) + td").first();
-            if (elementDate  != null) {
+            if (elementDate != null) {
                 String[] dateParts = elementDate.text().trim().split(" - ");
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH);
                 beginDate = LocalDate.parse(dateParts[0], formatter);
@@ -53,7 +53,7 @@ public class Championship implements Parsing {
             internalId = Integer.parseInt(card.select("link[rel=canonical]").attr("href").replaceAll("\\D", ""));
             name = card.select("h1.card-title").text();
             status = card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text();
-            organization = card.select("td:has(i.fab.fa-solid.fa-at)").text();
+            organization = card.select("td:contains(Организатор) + td a").text();
             simulator = card.select("td:has(i.fab.fa-solid.fa-gamepad)").text();
 
             Element tables = card.getElementById("tier-select");
@@ -70,11 +70,15 @@ public class Championship implements Parsing {
                         tableResult.setIsTeamResult(true);
                     }
                     tableResult.parseAndPopulate(Jsoup.connect(tableResult.getUrl()).get());
-                    tableResult.setChampionship(this);
+//                    tableResult.setChampionship(this);
                     tableResults.add(tableResult);
                 }
             }
-            log.atInfo().log(this.name + " championship was successfully parsed");
+
+            //TODO:не работает
+            //Оформить проход по всем внутренним элементам чтобы укзать у них кто за кем идет
+
+            log.atInfo().log(name + " championship was successfully parsed");
         } catch (Exception e) {
             log.atDebug().log(card.baseUri() + e.getMessage());
         }

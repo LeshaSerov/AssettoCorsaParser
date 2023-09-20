@@ -1,4 +1,16 @@
+/*
+buildscript {
+	repositories {
+		maven { url 'https://repo.spring.io/libs-milestone' }
+	}
+
+	dependencies {
+		classpath "org.springframework.boot:spring-boot-gradle-plugin:2.0.0.M6"
+	}
+}
+*/
 plugins {
+//	id 'com.palantir.docker' version '0.13.0'
 	id 'java'
 	id 'org.springframework.boot' version '3.1.3'
 	id 'io.spring.dependency-management' version '1.1.3'
@@ -9,6 +21,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	sourceCompatibility = '20'
+	targetCompatibility = '20'
 }
 
 configurations {
@@ -24,21 +37,43 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
 	// https://mvnrepository.com/artifact/org.jsoup/jsoup
 	implementation group: 'org.jsoup', name: 'jsoup', version: '1.16.1'
-
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
-	// https://mvnrepository.com/artifact/com.h2database/h2
-	testImplementation group: 'com.h2database', name: 'h2', version: '2.2.222'
+//	 https://mvnrepository.com/artifact/com.h2database/h2
+//	testImplementation group: 'com.h2database', name: 'h2', version: '2.2.222'
 
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
+/*
+springBoot {
+	mainClassName = "education.AssettoCorsaParser.AssettoCorsaParserApplication"
+}
+
+jar {
+	mainClassName = "education.AssettoCorsaParser.AssettoCorsaParserApplication"
+	baseName = 'spring-boot-webapp '
+	version = project.version
+}
+
+bootJar {
+	baseName = 'spring-boot-webapp '
+	version = project.version
+}
+
+docker {
+	name "jcg/spring-boot-webapp:$project.version"
+	tags 'latest'
+	dependsOn build
+	files bootJar
+	dockerfile file('src/main/docker/Dockerfile')
+	buildArgs([BUILD_VERSION: project.version])
+}*/

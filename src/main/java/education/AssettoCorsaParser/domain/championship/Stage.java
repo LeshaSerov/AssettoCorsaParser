@@ -6,6 +6,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Entity
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
@@ -22,20 +25,26 @@ public class Stage implements Parsing {
     private Long id;
     private Integer internalId;
     private String title;
-    private String schedule;
     private String date;
 
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne
-    @JoinColumn(name = "championship_id")
-    private Championship championship;
+    @JoinColumn(name = "tableresult_id")
+    private TableResult tableResult;
 
     @Override
     public Stage parseAndPopulate(Element card) {
         try {
-            Element firstElement = card.select("td.first.text-end").first();
-            if (firstElement != null) {
-                this.internalId = Integer.parseInt(firstElement.text());
+            Element linkElement = card.select("link[rel=canonical]").first();
+            if (linkElement != null) {
+                String href = linkElement.attr("href");
+                Pattern pattern = Pattern.compile("/(\\d+)$");
+                Matcher matcher = pattern.matcher(href);
+                if (matcher.find()) {
+                    this.internalId = Integer.parseInt(matcher.group(1));
+                }
             }
             this.title = card.select("h1.card-title").text();
 
