@@ -1,5 +1,6 @@
 package education.AssettoCorsaParser.domain.championship;
 
+import education.AssettoCorsaParser.domain.Parsing;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jsoup.nodes.Element;
@@ -8,8 +9,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-
-@Builder(toBuilder = true)
 @Entity
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
@@ -18,7 +17,7 @@ import java.util.*;
 @Getter
 @Table
 @ToString
-public class Stage {
+public class Stage implements Parsing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -26,15 +25,26 @@ public class Stage {
     private Integer internalId;
     private String title;
     private String schedule;
-    private LocalDate beginDate;
-    private LocalDate endDate;
+    private String date;
 
+
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "championship_id")
     private Championship championship;
 
     //https://yoklmnracing.ru/championships/147
-    public static Stage parse(Element card) {
+    @Override
+    public Stage parseAndPopulate(Element card) {
+        System.out.println(card.text());
+        this.internalId = Integer.parseInt(Objects.requireNonNull(card.select("td.first.text-end").first()).text());
+        this.title = card.select("h1.card-title").text().trim();
+        this.date = card.text();
+        return this;
+    }
+
+/*    public Stage parseAndPopulate(Element card) {
         return Stage.builder()
                 .internalId(Integer.parseInt(Objects.requireNonNull(card.select("h1.card-title a").first())
                         .attr("href").replaceAll("\\D", ""))
@@ -53,5 +63,7 @@ public class Stage {
 //                        ))
 //                )
                 .build();
-    }
+
+        return this;
+    }*/
 }

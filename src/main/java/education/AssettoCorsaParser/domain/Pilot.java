@@ -1,14 +1,16 @@
 package education.AssettoCorsaParser.domain;
 
 import education.AssettoCorsaParser.domain.championship.Championship;
+import education.AssettoCorsaParser.domain.championship.result.PilotTableResult;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-@Builder(toBuilder = true)
 @Entity
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
@@ -17,7 +19,7 @@ import java.util.List;
 @Getter
 @Table
 @ToString
-public class Pilot {
+public class Pilot implements Parsing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -28,15 +30,26 @@ public class Pilot {
     String city;
     String country;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "command_id")
     private Command command;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToMany(mappedBy = "pilots")
-    private List<Championship> championships = new ArrayList<>();
+    private Set<Championship> championships = new HashSet<>();
+
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @ManyToMany(mappedBy = "pilots")
+    private Set<PilotTableResult> tableResults = new HashSet<>();
 
     //https://yoklmnracing.ru/drivers
-    public static Pilot parse(Element card) {
 
+    public Pilot parseAndPopulate(Element card) {
+
+        return this;
     }
 }

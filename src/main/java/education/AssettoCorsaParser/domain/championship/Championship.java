@@ -1,9 +1,15 @@
 package education.AssettoCorsaParser.domain.championship;
 
+import education.AssettoCorsaParser.domain.Parsing;
 import education.AssettoCorsaParser.domain.Pilot;
+import education.AssettoCorsaParser.domain.championship.result.AbstractTableResult;
+import education.AssettoCorsaParser.domain.championship.result.PilotTableResult;
 import jakarta.persistence.*;
 import lombok.*;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -12,7 +18,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-@Builder(toBuilder = true)
 @Entity
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
@@ -21,7 +26,7 @@ import java.util.Objects;
 @Getter
 @Table
 @ToString
-public class Championship {
+public class Championship implements Parsing {
 
     /*
      * IMPORTANT:
@@ -39,53 +44,60 @@ public class Championship {
     private String name;
     private String status;
     private String simulator;
-    //    private Integer numberStages;
     private String organization;
     private LocalDate beginDate;
     private LocalDate endDate;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToMany
     @JoinTable(
             name = "championship_pilot",
             joinColumns = @JoinColumn(name = "championship_id"),
             inverseJoinColumns = @JoinColumn(name = "pilot_id")
     )
-    private List<Pilot> pilots;
+    private List<Pilot> pilots = new ArrayList<>();
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Stage> stages;
+    private List<Stage> stages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PilotResult> results;
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private AbstractTableResult tableResult;
 
-    public static Championship parse(Element card) {
-        List<Pilot> pilots = new ArrayList<>();
-        for (Element e : Objects.requireNonNull(card.select("div.table-responsive table").first())
-                .select("tr:not(:first-child)")) {
-            pilots.add(Pilot.parse(e));
-        }
-
-        List<Stage> stages = new ArrayList<>();
-        for (Element e : Objects.requireNonNull(card.select("div.tracks-list table").first())
-                .select("div.tracks-list table")) {
-            stages.add(Stage.parse(e));
-        }
-
-        List<PilotResult> results = new ArrayList<>();
-
-
+    @Override
+    public Championship parseAndPopulate(Element card) {
         String[] dateParts = card.select("td:has(i.fab.fa-solid.fa-calendar-days) + td").first().text().trim().split(" - ");
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH);
-        Championship championship = Championship.builder()
-                .name(card.select("h1.card-title").text())
-                .status(card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text())
-                .organization(card.select("td:has(i.fab.fa-solid.fa-at) a").text())
-                .simulator(card.select("td:has(i.fab.fa-solid.fa-gamepad)").text())
-                .beginDate(LocalDate.parse(dateParts[0], formatter))
-                .endDate(LocalDate.parse(dateParts[1], formatter))
-                .pilots(pilots)
-                .stages(stages)
-                .build();
+
+        this.internalId = Integer.parseInt(card.select("link[rel=canonical]").attr("href").replaceAll("\\D", ""));
+        this.name = card.select("h1.card-title").text();
+        this.status = card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text();
+        this.organization = card.select("td:has(i.fab.fa-solid.fa-at) a").text();
+        this.simulator = card.select("td:has(i.fab.fa-solid.fa-gamepad)").text();
+        this.beginDate = LocalDate.parse(dateParts[0], formatter);
+        this.endDate = LocalDate.parse(dateParts[1], formatter);
+
+        Document document = Jsoup.parse("https://yoklmnracing.ru/championships/" + internalId + "?tab=standings");
+
+
+//        for (Element e : Objects.requireNonNull(card.select("h3:contains(Участники) + div.table-responsive table tbody tr"))) {
+//            Pilot pilot = new Pilot().parseAndPopulate(e);
+//            pilot.getChampionships().add(this);
+//            pilots.add(pilot);
+//        }
+//
+//        for (Element e : card.select("h3:contains(Этапы) + div.tracks-list table tbody tr")) {
+//            Stage stage = new Stage().parseAndPopulate(e);
+//            stage.setChampionship(this);
+//            stages.add(stage);
+//        }
+
+        return this;
+    }
+
 
 //                .internalId(Integer.parseInt(Objects.requireNonNull(card.select("h1.card-title a").first())
 //                        .attr("href").replaceAll("\\D", ""))
@@ -101,11 +113,6 @@ public class Championship {
 //                .endDate(LocalDate.parse(dateParts[1], formatter))
 //                .build();
 //
-
-
-        return championship;
-    }
-
 
 //    private static Championship parseChampionship(Document document) {
 //        Championship championship = new Championship();

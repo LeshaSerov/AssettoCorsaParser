@@ -1,5 +1,6 @@
 package education.AssettoCorsaParser.domain.championship;
 
+import education.AssettoCorsaParser.domain.championship.result.PilotTableResult;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,7 +21,9 @@ public class ResultItem {
     private int columnIndex;
     private String value;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "result_championship_id")
-    private PilotResult resultChampionship;
+    private PilotTableResult resultChampionship;
 }

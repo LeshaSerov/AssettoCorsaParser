@@ -1,13 +1,14 @@
-package education.AssettoCorsaParser.domain.championship;
+package education.AssettoCorsaParser.domain.championship.result;
 
+import education.AssettoCorsaParser.domain.championship.Championship;
+import education.AssettoCorsaParser.domain.Parsing;
+import education.AssettoCorsaParser.domain.championship.ResultItem;
 import jakarta.persistence.*;
 import lombok.*;
-import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Builder(toBuilder = true)
 @Entity
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
@@ -16,27 +17,28 @@ import java.util.List;
 @Getter
 @Table
 @ToString
-public class PilotResult extends Result {
+public abstract class AbstractTableResult implements Parsing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String title;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "championship_id")
     private Championship championship;
 
-    @ElementCollection
-    private List<String> pilotNames = new ArrayList<>();
-
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ElementCollection
     private List<String> stageNames = new ArrayList<>();
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "result", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ResultItem> results;
-
-
 
 
 }

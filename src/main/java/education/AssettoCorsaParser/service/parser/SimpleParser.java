@@ -23,7 +23,7 @@ public class SimpleParser {
 
             // Перебор всех найденных элементов
             for (Element element : championshipCards) {
-                Championship.parse(Jsoup.connect(url + "/" + getId(element)).get());
+                new Championship().parseAndPopulate(Jsoup.connect(url + "/" + getId(element)).get());
             }
 
         } catch (Exception e) {
