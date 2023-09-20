@@ -1,22 +1,16 @@
 package education.AssettoCorsaParser.domain.championship;
 
 import education.AssettoCorsaParser.domain.Parsing;
-import education.AssettoCorsaParser.domain.Pilot;
-import education.AssettoCorsaParser.domain.championship.result.AbstractTableResult;
-import education.AssettoCorsaParser.domain.championship.result.PilotTableResult;
 import jakarta.persistence.*;
 import lombok.*;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
 @Entity
 @EqualsAndHashCode
@@ -50,40 +44,50 @@ public class Championship implements Parsing {
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    @ManyToMany
-    @JoinTable(
-            name = "championship_pilot",
-            joinColumns = @JoinColumn(name = "championship_id"),
-            inverseJoinColumns = @JoinColumn(name = "pilot_id")
-    )
-    private List<Pilot> pilots = new ArrayList<>();
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Stage> stages = new ArrayList<>();
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private AbstractTableResult tableResult;
+    @OneToMany
+    private List<TableResult> tableResult = new ArrayList<>();
 
     @Override
     public Championship parseAndPopulate(Element card) {
-        String[] dateParts = card.select("td:has(i.fab.fa-solid.fa-calendar-days) + td").first().text().trim().split(" - ");
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH);
+        try {
+            String[] dateParts = card.select("td:has(i.fab.fa-solid.fa-calendar-days) + td").first().text().trim().split(" - ");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH);
 
-        this.internalId = Integer.parseInt(card.select("link[rel=canonical]").attr("href").replaceAll("\\D", ""));
-        this.name = card.select("h1.card-title").text();
-        this.status = card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text();
-        this.organization = card.select("td:has(i.fab.fa-solid.fa-at) a").text();
-        this.simulator = card.select("td:has(i.fab.fa-solid.fa-gamepad)").text();
-        this.beginDate = LocalDate.parse(dateParts[0], formatter);
-        this.endDate = LocalDate.parse(dateParts[1], formatter);
+            this.internalId = Integer.parseInt(card.select("link[rel=canonical]").attr("href").replaceAll("\\D", ""));
+            this.name = card.select("h1.card-title").text();
+            this.status = card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text();
+            this.organization = card.select("td:has(i.fab.fa-solid.fa-at)").text();
+            this.simulator = card.select("td:has(i.fab.fa-solid.fa-gamepad)").text();
+            this.beginDate = LocalDate.parse(dateParts[0], formatter);
+            this.endDate = LocalDate.parse(dateParts[1], formatter);
 
-        Document document = Jsoup.parse("https://yoklmnracing.ru/championships/" + internalId + "?tab=standings");
+            System.out.println(name);
 
+            Element tables = card.getElementById("tier-select");
+            String urlTable = "https://yoklmnracing.ru/championships/" + internalId + "?tab=standings";
+            if (tables == null) {
+                TableResult tableResult = new TableResult("Личный", urlTable);
+                tableResult.parseAndPopulate(card);
+                tableResult.setChampionship(this);
+            } else {
+                for (Element e : tables.select("option")) {
+                    TableResult tableResult = new TableResult(e.text(), urlTable + "&" + e.attr("value"));
+                    if (e.attr("value").endsWith("team=1")) {
+                        tableResult.setIsTeamResult(true);
+                    }
+                    tableResult.parseAndPopulate(Jsoup.connect(tableResult.getUrl()).get());
+                    tableResult.setChampionship(this);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(card.baseUri());
+            e.printStackTrace();
+        }
 
-//        for (Element e : Objects.requireNonNull(card.select("h3:contains(Участники) + div.table-responsive table tbody tr"))) {
+        return this;
+    }
+
+    //        for (Element e : Objects.requireNonNull(card.select("h3:contains(Участники) + div.table-responsive table tbody tr"))) {
 //            Pilot pilot = new Pilot().parseAndPopulate(e);
 //            pilot.getChampionships().add(this);
 //            pilots.add(pilot);
@@ -94,9 +98,6 @@ public class Championship implements Parsing {
 //            stage.setChampionship(this);
 //            stages.add(stage);
 //        }
-
-        return this;
-    }
 
 
 //                .internalId(Integer.parseInt(Objects.requireNonNull(card.select("h1.card-title a").first())

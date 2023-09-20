@@ -6,7 +6,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SimpleParser {
 
@@ -23,7 +24,7 @@ public class SimpleParser {
 
             // Перебор всех найденных элементов
             for (Element element : championshipCards) {
-                new Championship().parseAndPopulate(Jsoup.connect(url + "/" + getId(element)).get());
+                System.out.println(new Championship().parseAndPopulate(Jsoup.connect(url + "/" + getId(element)).get()).toString());
             }
 
         } catch (Exception e) {

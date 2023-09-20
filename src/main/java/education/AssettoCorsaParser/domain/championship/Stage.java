@@ -5,9 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.jsoup.nodes.Element;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Objects;
 
 @Entity
 @EqualsAndHashCode
@@ -37,10 +35,27 @@ public class Stage implements Parsing {
     //https://yoklmnracing.ru/championships/147
     @Override
     public Stage parseAndPopulate(Element card) {
-        System.out.println(card.text());
-        this.internalId = Integer.parseInt(Objects.requireNonNull(card.select("td.first.text-end").first()).text());
-        this.title = card.select("h1.card-title").text().trim();
-        this.date = card.text();
+        try {
+
+            this.internalId = Integer.parseInt(Objects.requireNonNull(card.select("td.first.text-end").first()).text());
+            this.title = card.select("h1.card-title").text();
+            System.out.println(title);
+            String date = card.select("h4").text();
+            if (date.equals("")) {
+                // Извлекаем данные о начале мероприятия
+                String startDate = card.select("tr:has(td:contains(Начало:)) td.text-end")
+                        .get(1).select("div.d-none.d-sm-block").text();
+                // Извлекаем данные о завершении мероприятия
+                String endDate = card.select("tr:has(td:contains(Завершение:)) td.text-end")
+                        .get(1).select("div.d-none.d-sm-block").text();
+                // Формируем строку с датами в нужном формате
+                date = startDate + " - " + endDate;
+            }
+            this.date = date;
+        } catch (Exception e) {
+            System.out.println(card.baseUri());
+            e.printStackTrace();
+        }
         return this;
     }
 
