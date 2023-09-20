@@ -1,15 +1,11 @@
 package education.AssettoCorsaParser.domain.championship;
 
+import education.AssettoCorsaParser.domain.Parsing;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-
-
-@Builder(toBuilder = true)
 @Entity
 @EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
@@ -18,7 +14,8 @@ import java.util.*;
 @Getter
 @Table
 @ToString
-public class Stage {
+@Slf4j
+public class Stage implements Parsing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -26,32 +23,37 @@ public class Stage {
     private Integer internalId;
     private String title;
     private String schedule;
-    private LocalDate beginDate;
-    private LocalDate endDate;
+    private String date;
+
 
     @ManyToOne
     @JoinColumn(name = "championship_id")
     private Championship championship;
 
-    //https://yoklmnracing.ru/championships/147
-    public static Stage parse(Element card) {
-        return Stage.builder()
-                .internalId(Integer.parseInt(Objects.requireNonNull(card.select("h1.card-title a").first())
-                        .attr("href").replaceAll("\\D", ""))
-                )
-                .title(card.select("h1.card-title").text().trim())
-                .beginDate(LocalDate.parse(card.select("td:has(i.fab.fa-solid.fa-flag) + td").text().trim(),
-                        DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH)))
-                .endDate(LocalDate.parse(card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text().trim(),
-                        DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH)))
-//                .specialSections(card.select("div.table-responsive table tbody tr").stream()
-//                        .collect(Collectors.toMap(
-//                                section -> section.select("td.first").text().trim(),
-//                                section -> "",
-//                                (existing, replacement) -> existing,
-//                                TreeMap::new
-//                        ))
-//                )
-                .build();
+    @Override
+    public Stage parseAndPopulate(Element card) {
+        try {
+            Element firstElement = card.select("td.first.text-end").first();
+            if (firstElement != null) {
+                this.internalId = Integer.parseInt(firstElement.text());
+            }
+            this.title = card.select("h1.card-title").text();
+
+            String dateText = card.select("h4").text();
+            if (dateText.isEmpty()) {
+                String startDate = card.select("tr:has(td:contains(Начало:)) td.text-end")
+                        .get(1).select("div.d-none.d-sm-block").text();
+                String endDate = card.select("tr:has(td:contains(Завершение:)) td.text-end")
+                        .get(1).select("div.d-none.d-sm-block").text();
+                dateText = startDate + " - " + endDate;
+            }
+            this.date = dateText;
+
+            log.atInfo().log(this.title + " stage was successfully parsed");
+        } catch (Exception e) {
+            log.atDebug().log(card.baseUri() + e.getMessage());
+        }
+
+        return this;
     }
 }

@@ -1,20 +1,21 @@
+version: '3' # Версия Compose
+
 services:
   app:
-    build: .
-    container_name: app
+    build: . # Собираем образ из текущей директории Dockerfile
+    container_name: app # Имя контейнера
     depends_on:
-      - db
+      - postgres # Ожидаем, пока контейнер postgres стартует
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db/simple
-      - SPRING_DATASOURCE_USERNAME=compose-postgres
-      - SPRING_DATASOURCE_PASSWORD=compose-postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres/mydatabase # Изменено на имя контейнера postgres
+      - SPRING_DATASOURCE_USERNAME=myuser # Удалены лишние кавычки
+      - SPRING_DATASOURCE_PASSWORD=secret # Удалены лишние кавычки
 
   postgres:
     image: 'postgres:latest'
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - POSTGRES_DB=mydatabase
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_USER=myuser
     ports:
-      - '5432'
-
+      - '5432:5432' # Маппинг порта хоста на порт контейнера
