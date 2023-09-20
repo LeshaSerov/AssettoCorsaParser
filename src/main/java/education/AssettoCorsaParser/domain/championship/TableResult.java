@@ -1,17 +1,16 @@
 package education.AssettoCorsaParser.domain.championship;
 
 import education.AssettoCorsaParser.domain.Parsing;
-import education.AssettoCorsaParser.domain.championship.participant.Participant;
-import education.AssettoCorsaParser.domain.championship.participant.Racer;
-import education.AssettoCorsaParser.domain.championship.participant.Team;
+import education.AssettoCorsaParser.domain.participant.Racer;
+import education.AssettoCorsaParser.domain.participant.Team;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 @Entity
@@ -23,33 +22,35 @@ import java.util.stream.IntStream;
 @Getter
 @Table
 @ToString
+@Slf4j
 public class TableResult implements Parsing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
     @NonNull
     private String title;
+
     @NonNull
     private String url;
+
     private Boolean isTeamResult = false;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "championship_id")
     private Championship championship;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany
+    @OneToMany(mappedBy = "tableResult", cascade = CascadeType.ALL)
     private List<Stage> stages = new ArrayList<>();
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @ManyToMany
-//    private List<Participant> participating = new ArrayList<>();
-    private TreeMap<Participant, String> totalResult = new TreeMap<>();
+    @ManyToMany(mappedBy = "tableResultForRacer", cascade = CascadeType.ALL)
+    private List<Racer> racers = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "tableResultForTeam", cascade = CascadeType.ALL)
+    private List<Team> teams = new ArrayList<>();
+    @ElementCollection
+    List<String> result = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RowTable> table;
@@ -58,44 +59,41 @@ public class TableResult implements Parsing {
     public TableResult parseAndPopulate(Element card) {
         try {
 
-            System.out.println(title);
-
-            Element table = card.select("table:has(th:contains(Пилот))").first(); // Выбираем первую таблицу
-
-            // Парсинг верхнего заголовка
             for (Element e : card.select("thead th:has(a)")) {
                 stages.add(new Stage().parseAndPopulate(Jsoup.connect("https://yoklmnracing.ru" + e.select("a").attr("href")).get()));
             }
 
-            // Парсинг бокового заголовка - Участники
-            List<Participant> participants = new ArrayList<>();
-            for (Element e : table.select("td:eq(1)")) {
-                Participant participant = isTeamResult ? new Team() : new Racer();
-                participants.add(participant.parseAndPopulate(Jsoup.connect("https://yoklmnracing.ru" + e.select("a").attr("href")).get()));
-            }
-            // Парсинг итоговой колонки - Результаты
-            List<String> totalColumnList = card.select("tbody tr td.text-center:last-child").stream()
+            result = card.select("tbody tr td.text-center:last-child").stream()
                     .map(Element::text).toList();
-            // Итоговая мапа с результами чемпионата
-            for (int i = 0; i < participants.size(); i++) {
-                totalResult.put(participants.get(i), totalColumnList.get(i));
+
+            Element table = card.select("table:has(th:contains(Пилот))").first();
+            if (table != null) {
+                for (Element e : table.select("td:eq(1)")) {
+                    Element element = Jsoup.connect("https://yoklmnracing.ru" + e.select("a").attr("href")).get();
+                    if (isTeamResult) {
+                        teams.add(new Team().parseAndPopulate(element));
+                    } else {
+                        racers.add(new Racer().parseAndPopulate(element));
+                    }
+                }
+
+                List<String> elementsInnerTable = table.select("td.text-center:not(td:last-child)").stream()
+                        .map(Element::text)
+                        .toList();
+                int batchSize = card.select("thead th:has(a)").size();
+                this.table = IntStream.range(0, (elementsInnerTable.size() + batchSize - 1) / batchSize)
+                        .mapToObj(i -> elementsInnerTable.subList(i * batchSize, Math.min((i + 1) * batchSize, elementsInnerTable.size())))
+                        .map(batch -> {
+                            RowTable rowTable = new RowTable();
+                            rowTable.setRowData(batch);
+                            return rowTable;
+                        })
+                        .toList();
             }
 
-            // Парсинг внутренней таблицы
-            List<String> elementsInnerTable = table.select("td.text-center:not(td:last-child)").stream()
-                    .map(Element::text)
-                    .toList();
-            int batchSize = card.select("thead th:has(a)").size();
-            this.table = IntStream.range(0, (elementsInnerTable.size() + batchSize - 1) / batchSize)
-                    .mapToObj(i -> elementsInnerTable.subList(i * batchSize, Math.min((i + 1) * batchSize, elementsInnerTable.size())))
-                    .map(batch -> {
-                        RowTable rowTable = new RowTable();
-                        rowTable.setRowData(batch);
-                        return rowTable;
-                    })
-                    .toList();
-
-        } catch (Exception ignored) {
+            log.atInfo().log(this.title + " tableResult was successfully parsed");
+        } catch (Exception e) {
+            log.atDebug().log(card.baseUri() + e.getMessage());
         }
         return this;
     }
@@ -111,30 +109,5 @@ public class TableResult implements Parsing {
         private List<String> rowData;
     }
 
+
 }
-
-//    @ToString.Exclude
-//    @EqualsAndHashCode.Exclude
-//    @OneToMany(mappedBy = "table", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<ResultItem> table;
-
-
-/*    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @ManyToMany
-    @JoinTable(
-            name = "command_table_result",
-            joinColumns = @JoinColumn(name = "command_table_result_id"),
-            inverseJoinColumns = @JoinColumn(name = "command_id")
-    )
-    private List<Command> commands = new ArrayList<>();
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @ManyToMany
-    @JoinTable(
-            name = "pilot_table_result",
-            joinColumns = @JoinColumn(name = "pilot_table_result_id"),
-            inverseJoinColumns = @JoinColumn(name = "pilot_id")
-    )
-    private List<Pilot> pilots = new ArrayList<>();*/

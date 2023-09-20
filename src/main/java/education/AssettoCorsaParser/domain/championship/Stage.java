@@ -3,9 +3,8 @@ package education.AssettoCorsaParser.domain.championship;
 import education.AssettoCorsaParser.domain.Parsing;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
-
-import java.util.Objects;
 
 @Entity
 @EqualsAndHashCode
@@ -15,6 +14,7 @@ import java.util.Objects;
 @Getter
 @Table
 @ToString
+@Slf4j
 public class Stage implements Parsing {
 
     @Id
@@ -26,59 +26,34 @@ public class Stage implements Parsing {
     private String date;
 
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @ManyToOne
     @JoinColumn(name = "championship_id")
     private Championship championship;
 
-    //https://yoklmnracing.ru/championships/147
     @Override
     public Stage parseAndPopulate(Element card) {
         try {
-
-            this.internalId = Integer.parseInt(Objects.requireNonNull(card.select("td.first.text-end").first()).text());
+            Element firstElement = card.select("td.first.text-end").first();
+            if (firstElement != null) {
+                this.internalId = Integer.parseInt(firstElement.text());
+            }
             this.title = card.select("h1.card-title").text();
-            System.out.println(title);
-            String date = card.select("h4").text();
-            if (date.equals("")) {
-                // Извлекаем данные о начале мероприятия
+
+            String dateText = card.select("h4").text();
+            if (dateText.isEmpty()) {
                 String startDate = card.select("tr:has(td:contains(Начало:)) td.text-end")
                         .get(1).select("div.d-none.d-sm-block").text();
-                // Извлекаем данные о завершении мероприятия
                 String endDate = card.select("tr:has(td:contains(Завершение:)) td.text-end")
                         .get(1).select("div.d-none.d-sm-block").text();
-                // Формируем строку с датами в нужном формате
-                date = startDate + " - " + endDate;
+                dateText = startDate + " - " + endDate;
             }
-            this.date = date;
+            this.date = dateText;
+
+            log.atInfo().log(this.title + " stage was successfully parsed");
         } catch (Exception e) {
-            System.out.println(card.baseUri());
-            e.printStackTrace();
+            log.atDebug().log(card.baseUri() + e.getMessage());
         }
+
         return this;
     }
-
-/*    public Stage parseAndPopulate(Element card) {
-        return Stage.builder()
-                .internalId(Integer.parseInt(Objects.requireNonNull(card.select("h1.card-title a").first())
-                        .attr("href").replaceAll("\\D", ""))
-                )
-                .title(card.select("h1.card-title").text().trim())
-                .beginDate(LocalDate.parse(card.select("td:has(i.fab.fa-solid.fa-flag) + td").text().trim(),
-                        DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH)))
-                .endDate(LocalDate.parse(card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text().trim(),
-                        DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH)))
-//                .specialSections(card.select("div.table-responsive table tbody tr").stream()
-//                        .collect(Collectors.toMap(
-//                                section -> section.select("td.first").text().trim(),
-//                                section -> "",
-//                                (existing, replacement) -> existing,
-//                                TreeMap::new
-//                        ))
-//                )
-                .build();
-
-        return this;
-    }*/
 }
