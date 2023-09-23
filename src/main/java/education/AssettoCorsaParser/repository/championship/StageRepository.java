@@ -1,8 +1,10 @@
 package education.AssettoCorsaParser.repository.championship;
 
-import education.AssettoCorsaParser.domain.championship.Stage;
+import education.AssettoCorsaParser.entity.championship.Stage;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.ListCrudRepository;
 
 public interface StageRepository extends JpaRepository<Stage, Long> {
+
+  Optional<Stage> findByTitle(String title);
 }
