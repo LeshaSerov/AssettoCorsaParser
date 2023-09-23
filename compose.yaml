@@ -2,20 +2,21 @@ version: '3'
 
 services:
   app:
-    build: ./src/main/docker/ # Собираем образ из текущей директории Dockerfile
+    build: ../../../..
     container_name: app # Имя контейнера
     depends_on:
       - postgres # Ожидаем, пока контейнер postgres стартует
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres/GavBD
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=sdfsdf
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "3000:3000"
 
   postgres:
     image: 'postgres:latest'
     environment:
-      - POSTGRES_DB=GavBD
-      - POSTGRES_PASSWORD=sdfsdf
-      - POSTGRES_USER=root
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
       - '5432:5432' # Маппинг порта хоста на порт контейнера

@@ -1,16 +1,26 @@
 package education.AssettoCorsaParser.domain.championship;
 
 import education.AssettoCorsaParser.domain.Parsing;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 @Entity
-@EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
 @NoArgsConstructor
 @Setter(value = AccessLevel.PACKAGE)
@@ -30,8 +40,7 @@ public class Stage implements Parsing {
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    @ManyToOne
-    @JoinColumn(name = "tableresult_id")
+    @ManyToOne(fetch = FetchType.LAZY)
     private TableResult tableResult;
 
     @Override
@@ -58,7 +67,7 @@ public class Stage implements Parsing {
             }
             this.date = dateText;
 
-            log.atInfo().log(this.title + " stage was successfully parsed");
+            log.atInfo().log("    " + this.title + " - Stage was successfully parsed");
         } catch (Exception e) {
             log.atDebug().log(card.baseUri() + e.getMessage());
         }

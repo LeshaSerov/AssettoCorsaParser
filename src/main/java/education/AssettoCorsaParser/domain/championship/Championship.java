@@ -1,21 +1,32 @@
 package education.AssettoCorsaParser.domain.championship;
 
 import education.AssettoCorsaParser.domain.Parsing;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-
+import education.AssettoCorsaParser.domain.participant.Racer;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 
 
 @Entity
-@EqualsAndHashCode
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
 @NoArgsConstructor
 @Setter(value = AccessLevel.PACKAGE)
@@ -36,28 +47,32 @@ public class Championship implements Parsing {
     private LocalDate beginDate;
     private LocalDate endDate;
 
-    @OneToMany(mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
-        private List<TableResult> tableResults = new ArrayList<>();
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "championship", orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<TableResult> tableResults = new ArrayList<>();
 
     @Override
     public Championship parseAndPopulate(Element card) {
         try {
-            Element elementDate = card.select("td:has(i.fab.fa-solid.fa-calendar-days) + td").first();
+            Element elementDate = card.select("td:has(i.fab.fa-solid.fa-calendar-days) + td")
+                .first();
             if (elementDate != null) {
                 String[] dateParts = elementDate.text().trim().split(" - ");
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.ENGLISH);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy",
+                    Locale.ENGLISH);
                 beginDate = LocalDate.parse(dateParts[0], formatter);
                 endDate = LocalDate.parse(dateParts[1], formatter);
             }
 
-            internalId = Integer.parseInt(card.select("link[rel=canonical]").attr("href").replaceAll("\\D", ""));
+            internalId = Integer.parseInt(
+                card.select("link[rel=canonical]").attr("href").replaceAll("\\D", ""));
             name = card.select("h1.card-title").text();
             status = card.select("td:has(i.fab.fa-solid.fa-flag-checkered) + td").text();
             organization = card.select("td:contains(Организатор) + td a").text();
             simulator = card.select("td:has(i.fab.fa-solid.fa-gamepad)").text();
 
             Element tables = card.getElementById("tier-select");
-            String urlTable = "https://yoklmnracing.ru/championships/" + internalId + "?tab=standings";
+            String urlTable =
+                "https://yoklmnracing.ru/championships/" + internalId + "?tab=standings";
             if (tables == null) {
                 TableResult tableResult = new TableResult("Личный", urlTable);
                 tableResult.parseAndPopulate(card);
@@ -65,7 +80,8 @@ public class Championship implements Parsing {
                 tableResults.add(tableResult);
             } else {
                 for (Element e : tables.select("option")) {
-                    TableResult tableResult = new TableResult(e.text(), urlTable + "&" + e.attr("value"));
+                    TableResult tableResult = new TableResult(e.text(),
+                        urlTable + "&" + e.attr("value"));
                     if (e.attr("value").endsWith("team=1")) {
                         tableResult.setIsTeamResult(true);
                     }
@@ -75,10 +91,11 @@ public class Championship implements Parsing {
                 }
             }
 
-            //TODO:не работает
-            //Оформить проход по всем внутренним элементам чтобы укзать у них кто за кем идет
+            for (TableResult tableResult : tableResults) {
+                tableResult.setChampionship(this);
+            }
 
-            log.atInfo().log(name + " championship was successfully parsed");
+            log.atInfo().log(name + " - Championship was successfully parsed");
         } catch (Exception e) {
             log.atDebug().log(card.baseUri() + e.getMessage());
         }

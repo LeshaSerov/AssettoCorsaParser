@@ -1,7 +1,9 @@
 package education.AssettoCorsaParser.repository.championship;
 
 import education.AssettoCorsaParser.domain.championship.Championship;
-import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ChampionshipRepository extends ListCrudRepository<Championship, Long> {
+public interface ChampionshipRepository extends JpaRepository<Championship, Long> {
+
+
 }

@@ -1,16 +1,28 @@
 package education.AssettoCorsaParser.domain.participant;
 
-import education.AssettoCorsaParser.domain.championship.Championship;
-import jakarta.persistence.*;
-import lombok.*;
+import education.AssettoCorsaParser.domain.championship.TableResult;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
-@EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
 @NoArgsConstructor
 @Getter
@@ -23,21 +35,18 @@ public class Racer extends Participant {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Column(name = "profile_url")
+    @Column
     private String profileUrl;
 
     private String name;
     private String city;
     private String country;
 
-    @ManyToOne
-    @JoinColumn(name = "team_id")
+    @ManyToOne(fetch = FetchType.LAZY)
     private Team team;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @ManyToMany(mappedBy = "pilots")
-    private Set<Championship> championships = new HashSet<>();
+    @ManyToMany(mappedBy = "racers")
+    private Set<TableResult> results = new HashSet<>();
 
     public Racer parseAndPopulate(Element card) {
         try {
@@ -61,13 +70,7 @@ public class Racer extends Participant {
                 country = countryElement.text().trim();
             }
 
-            Element teamElement = card.select("tr:has(td:contains(Команда)) td:eq(1)").first();
-            if (teamElement != null) {
-                team = new Team();
-                team.setName(teamElement.text().trim());
-            }
-
-            log.atInfo().log(this.name + " Racer was successfully parsed");
+            log.atInfo().log("    " + this.name + " - Racer was successfully parsed");
         } catch (Exception e) {
             log.atDebug().log(card.baseUri() + e.getMessage());
         }
