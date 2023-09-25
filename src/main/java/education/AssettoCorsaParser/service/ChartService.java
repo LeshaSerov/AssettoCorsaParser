@@ -1,21 +1,12 @@
-package education.AssettoCorsaParser.service.builder;
+package education.AssettoCorsaParser.service;
 
 import education.AssettoCorsaParser.entity.championship.Chart;
 import education.AssettoCorsaParser.entity.championship.Row;
 import education.AssettoCorsaParser.entity.championship.Stage;
 import education.AssettoCorsaParser.entity.participant.Racer;
 import education.AssettoCorsaParser.entity.participant.Team;
-import education.AssettoCorsaParser.repository.championship.ChartRepository;
-import education.AssettoCorsaParser.repository.championship.RowRepository;
-import education.AssettoCorsaParser.repository.championship.StageRepository;
-import education.AssettoCorsaParser.repository.participant.RacerRepository;
-import education.AssettoCorsaParser.repository.participant.TeamRepository;
-import education.AssettoCorsaParser.service.ParsingService;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,25 +18,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class ChartService implements ParsingService {
-
-  private final TeamRepository teamRepository;
-
-  private final RacerRepository racerRepository;
-
-  private final StageRepository stageRepository;
-
-  private final RowRepository rowRepository;
-
-  private final ChartRepository chartRepository;
   private final StageService stageService;
   private final TeamService teamService;
   private final RacerService racerService;
 
   @Override
   public Chart parse(Element card) {
-
-    Chart existingChart = null;
-
+    log.atInfo().log("    Chart parsing");
     String title;
     String url = card.baseUri();
     boolean isTeam = false;
@@ -64,13 +43,8 @@ public class ChartService implements ParsingService {
           title = "None";
         }
       }
-      Optional<Chart> optionalChart = chartRepository.findByUrl(url);
-      if (optionalChart.isPresent()) {
-        existingChart = optionalChart.get();
-      }
     }
-
-    Set<Stage> stages = new LinkedHashSet<>();
+    List<Stage> stages = new ArrayList<>();
     {
       for (Element e : card.select("thead th:has(a)")) {
         try {
@@ -84,10 +58,9 @@ public class ChartService implements ParsingService {
 
     List<String> result = card.select("tbody tr td.text-center:last-child").stream()
         .map(Element::text).toList();
-
     List<Row> rows = new ArrayList<>();
-    Set<Team> teams = new LinkedHashSet<>();
-    Set<Racer> racers = new LinkedHashSet<>();
+    List<Team> teams = new ArrayList<>();
+    List<Racer> racers = new ArrayList<>();
     {
       Element tableHtml;
       if (isTeam) {
@@ -109,7 +82,6 @@ public class ChartService implements ParsingService {
             log.atWarn().log(card.baseUri() + " - Chart.Participant: " + exception.getMessage());
           }
         }
-
         List<String> elementsInnerTable = tableHtml.select("td.text-center:not(td:last-child)")
             .stream().map(Element::text).toList();
         int batchSize = card.select("thead th:has(a)").size();
@@ -120,56 +92,30 @@ public class ChartService implements ParsingService {
             .map(batch -> Row.builder().data(batch).build()).toList();
       }
     }
-
-    if (existingChart == null) {
-      Chart chart = Chart.builder()
-          .title(title)
-          .url(url)
-          .isTeam(isTeam)
-          .result(result)
-          .rows(rows)
-          .stages(stages)
-          .racers(racers)
-          .teams(teams)
-          .build();
-      setOwnerChart(chart, stages, rows, teams, racers);
-      log.atInfo().log(title + " - Chart was successfully parsed");
-      chartRepository.save(chart);
-      log.atInfo().log(title + " - Chart was successfully saved");
-      return chart;
-    } else {
-      existingChart.setTitle(title);
-      existingChart.setUrl(url);
-      existingChart.setIsTeam(isTeam);
-      existingChart.setResult(result);
-      rowRepository.deleteAll(existingChart.getRows());
-      existingChart.setRows(rows);
-      stageRepository.deleteAll(existingChart.getStages());
-      existingChart.setStages(stages);
-      racerRepository.deleteAll(existingChart.getRacers());
-      existingChart.setRacers(racers);
-      teamRepository.deleteAll(existingChart.getTeams());
-      existingChart.setTeams(teams);
-      setOwnerChart(existingChart, stages, rows, teams, racers);
-      return existingChart;
-    }
-  }
-
-  private void setOwnerChart(Chart existingChart, Set<Stage> stages, List<Row> rows,
-      Set<Team> teams, Set<Racer> racers) {
+    Chart chart = Chart.builder()
+        .title(title)
+        .url(url)
+        .isTeam(isTeam)
+        .result(result)
+        .rows(rows)
+        .stages(stages)
+        .racers(racers)
+        .teams(teams)
+        .build();
     for (Row row : rows) {
-      row.setChart(existingChart);
+      row.setChart(chart);
     }
     for (Stage stage : stages) {
-      stage.getCharts().add(existingChart);
+      stage.setChart(chart);
     }
     for (Team team : teams) {
-      team.getCharts().add(existingChart);
+      team.setChart(chart);
     }
     for (Racer racer : racers) {
-      racer.getCharts().add(existingChart);
+      racer.setChart(chart);
     }
+    log.atInfo().log("    " + title + " - Chart was successfully parsed.");
+    return chart;
   }
-
 }
 

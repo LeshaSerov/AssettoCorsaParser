@@ -1,5 +1,6 @@
 package education.AssettoCorsaParser.entity.participant;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import education.AssettoCorsaParser.entity.Parsable;
 import education.AssettoCorsaParser.entity.championship.Chart;
 import jakarta.persistence.Column;
@@ -8,11 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +18,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Include;
-import org.hibernate.Hibernate;
 
 @Builder
 @AllArgsConstructor
@@ -44,8 +40,7 @@ public class Racer implements Parsable {
   private String url;
 
   @Include
-  @NonNull
-  @Column(name = "name", unique = true)
+  @Column(name = "name")
   private String name;
 
   @Include
@@ -56,28 +51,8 @@ public class Racer implements Parsable {
   @Column(name = "country")
   private String country;
 
-  @Builder.Default
-  @ManyToMany(mappedBy = "racers")
-  private Set<Chart> charts = new LinkedHashSet<>();
-
+  @JsonIgnore
   @ManyToOne
-  @JoinColumn(name = "team_id")
-  private Team team;
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
-      return false;
-    }
-    Racer racer = (Racer) o;
-    return getId() != null && Objects.equals(getId(), racer.getId());
-  }
-
-  @Override
-  public int hashCode() {
-    return getClass().hashCode();
-  }
+  @JoinColumn(name = "chart_id")
+  private Chart chart;
 }

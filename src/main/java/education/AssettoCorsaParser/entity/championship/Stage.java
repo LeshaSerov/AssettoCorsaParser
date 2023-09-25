@@ -1,5 +1,6 @@
 package education.AssettoCorsaParser.entity.championship;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import education.AssettoCorsaParser.entity.Parsable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,11 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +17,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Include;
-import org.hibernate.Hibernate;
 
 @Builder
 @AllArgsConstructor
@@ -39,11 +35,10 @@ public class Stage implements Parsable {
   private Long id;
 
   @Include
-  @Column(name = "internal_id", unique = true)
+  @Column(name = "internal_id")
   private Integer internalId;
 
   @Include
-  @NonNull
   @Column(name = "title")
   private String title;
 
@@ -51,23 +46,8 @@ public class Stage implements Parsable {
   @Column(name = "date")
   private String date;
 
-  @ManyToMany(mappedBy = "stages")
-  private Set<Chart> charts = new LinkedHashSet<>();
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
-      return false;
-    }
-    Stage stage = (Stage) o;
-    return getId() != null && Objects.equals(getId(), stage.getId());
-  }
-
-  @Override
-  public int hashCode() {
-    return getClass().hashCode();
-  }
+  @JsonIgnore
+  @ManyToOne
+  @JoinColumn(name = "chart_id")
+  private Chart chart;
 }

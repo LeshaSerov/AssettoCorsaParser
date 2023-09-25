@@ -5,6 +5,5 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ChartRepository extends JpaRepository<Chart, Long> {
-
   Optional<Chart> findByUrl(String url);
 }

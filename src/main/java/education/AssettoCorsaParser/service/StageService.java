@@ -1,9 +1,6 @@
-package education.AssettoCorsaParser.service.builder;
+package education.AssettoCorsaParser.service;
 
 import education.AssettoCorsaParser.entity.championship.Stage;
-import education.AssettoCorsaParser.repository.championship.StageRepository;
-import education.AssettoCorsaParser.service.ParsingService;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +13,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class StageService implements ParsingService {
 
-  private final StageRepository stageRepository;
-
   @Override
   public Stage parse(Element card) {
-
-    Stage existingStage = null;
-
     String title = card.select("h1.card-title").text();
     Integer internalId = null;
     {
@@ -33,14 +25,9 @@ public class StageService implements ParsingService {
         Matcher matcher = pattern.matcher(href);
         if (matcher.find()) {
           internalId = Integer.parseInt(matcher.group(1));
-          Optional<Stage> optionalStage = stageRepository.findByTitle(title);
-          if (optionalStage.isPresent()) {
-            existingStage = optionalStage.get();
-          }
         }
       }
     }
-
     String date = "";
     {
       String dateText = card.select("h4").text();
@@ -53,23 +40,13 @@ public class StageService implements ParsingService {
       }
       date = dateText;
     }
-
-    if (existingStage == null) {
-      Stage stage = Stage.builder()
-          .internalId(internalId)
-          .title(title)
-          .date(date)
-          .build();
-      log.atInfo().log(title + " - Stage was successfully parsed");
-      stageRepository.save(stage);
-      log.atInfo().log(title + " - Stage was successfully saved");
-      return stage;
-    } else {
-      existingStage.setInternalId(internalId);
-      existingStage.setTitle(title);
-      existingStage.setDate(date);
-      return existingStage;
-    }
+    Stage stage = Stage.builder()
+        .internalId(internalId)
+        .title(title)
+        .date(date)
+        .build();
+    log.atInfo().log("      " + title + " - Stage was successfully parsed");
+    return stage;
   }
 
 

@@ -19,6 +19,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.ToString.Include;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 @Builder
 @AllArgsConstructor
@@ -37,40 +39,35 @@ public class Championship implements Parsable {
   private Long id;
 
   @Include
-  @NonNull
-  @Column(name = "internal_id", unique = true)
+  @Column(name = "internal_id")
   private Integer internalId;
 
   @Include
-  @NonNull
-  @Column(name = "name", unique = true)
+  @Column(name = "name")
   private String name;
 
   @Include
-  @NonNull
   @Column(name = "status")
   private String status;
 
   @Include
-  @NonNull
   @Column(name = "simulator")
   private String simulator;
 
   @Include
-  @NonNull
   @Column(name = "organization")
   private String organization;
 
   @Include
   @Column(name = "begin_date")
-  private LocalDate beginDate;
+  private String beginDate;
 
   @Include
   @Column(name = "end_date")
-  private LocalDate endDate;
+  private String endDate;
 
   @Builder.Default
-  @OneToMany(mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(fetch = jakarta.persistence.FetchType.EAGER, mappedBy = "championship", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Fetch(FetchMode.JOIN)
   private List<Chart> charts = new ArrayList<>();
-
 }

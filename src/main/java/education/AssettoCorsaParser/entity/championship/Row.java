@@ -1,5 +1,7 @@
 package education.AssettoCorsaParser.entity.championship;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import education.AssettoCorsaParser.entity.Parsable;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -43,8 +45,8 @@ public class Row implements Parsable {
   @CollectionTable(name = "row_data", joinColumns = @JoinColumn(name = "owner_id"))
   private List<String> data = new ArrayList<>();
 
+  @JsonIgnore
   @ManyToOne
   @JoinColumn(name = "chart_id")
   private Chart chart;
-
 }
