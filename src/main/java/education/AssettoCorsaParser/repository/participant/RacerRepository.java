@@ -1,7 +1,10 @@
 package education.AssettoCorsaParser.repository.participant;
 
-import education.AssettoCorsaParser.domain.participant.Racer;
-import org.springframework.data.repository.ListCrudRepository;
+import education.AssettoCorsaParser.entity.participant.Racer;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface RacerRepository extends ListCrudRepository<Racer, Long> {
+public interface RacerRepository extends JpaRepository<Racer, Long> {
+  Optional<Racer> findByUrl(String url);
+  Optional<Racer> findByName(String name);
 }

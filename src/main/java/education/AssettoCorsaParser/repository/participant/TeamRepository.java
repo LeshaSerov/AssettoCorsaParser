@@ -1,7 +1,9 @@
 package education.AssettoCorsaParser.repository.participant;
 
-import education.AssettoCorsaParser.domain.participant.Team;
-import org.springframework.data.repository.ListCrudRepository;
+import education.AssettoCorsaParser.entity.participant.Team;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TeamRepository extends ListCrudRepository<Team, Long> {
+public interface TeamRepository extends JpaRepository<Team, Long> {
+  Optional<Team> findByName(String name);
 }

@@ -1,21 +1,42 @@
-version: '3' # Версия Compose
+version: '3'
+
+#volumes:
+#  db_volume:
 
 services:
-  app:
-    build: . # Собираем образ из текущей директории Dockerfile
-    container_name: app # Имя контейнера
-    depends_on:
-      - postgres # Ожидаем, пока контейнер postgres стартует
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres/mydatabase # Изменено на имя контейнера postgres
-      - SPRING_DATASOURCE_USERNAME=myuser # Удалены лишние кавычки
-      - SPRING_DATASOURCE_PASSWORD=secret # Удалены лишние кавычки
 
   postgres:
-    image: 'postgres:latest'
+    restart: always
+    image: 'postgres:16'
+    container_name: postgres
     environment:
-      - POSTGRES_DB=mydatabase
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_USER=myuser
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+#    volumes:
+#      - db_volume:/postgres-data:/var/lib/postgresql/data
+
     ports:
-      - '5432:5432' # Маппинг порта хоста на порт контейнера
+      - '5420'
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    container_name: application
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "create"
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SERVER_PORT: 3000
+
+volumes:
+  pgdata:
